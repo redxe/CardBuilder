@@ -11,8 +11,7 @@
     <!-- Remove CSV parser as we'll use built-in XML parser -->
     <script src="js/model.js" defer></script>
     <script src="js/view.js" defer></script>
-    <script src="js/controller.js" defer></script> 
-    <script src="js/main.js" defer></script>
+    <script src="js/controller.js" defer></script>
 </head>
 <body>
     <div class="container">
@@ -206,4 +205,13 @@
         </div>
     </div>
 </body>
+
+<script>
+// Card Composer JS - MVC Implementation
+document.addEventListener('DOMContentLoaded', function() {    
+    // Initialize the application
+    Controller.init();
+});
+</script>
+
 </html>
