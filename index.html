@@ -5,17 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Card Builder</title>
 
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=1.0.5">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Remove CSV parser as we'll use built-in XML parser -->
-    <script src="js/model.js" defer></script>
-    <script src="js/view.js" defer></script>
-    <script src="js/controller.js" defer></script>
+    <script src="js/model.js?v=1.0.5" defer></script>
+    <script src="js/view.js?v=1.0.5" defer></script>
+    <script src="js/controller.js?v=1.0.5" defer></script>
 </head>
 <body>
     <div class="container">
-        <h1>Card Composer</h1>
+        <div class="header-container">
+            <h1>Card Composer</h1>
+            <button id="hotkeysBtn" class="btn" title="Show keyboard shortcuts">
+                <i class="fa-solid fa-keyboard"></i> Shortcuts
+            </button>
+        </div>
         
         <div class="card-workspace">
             <div class="canvas-container">
@@ -51,6 +56,7 @@
                     <button id="exportXML" class="btn"><i class="fa-solid fa-code"></i> Export XML</button>
                     <button id="exportAllXML" class="btn" style="display: none;"><i class="fa-solid fa-code"></i> Export All XML</button>
                     <button id="resetCard" class="btn danger"><i class="fa-solid fa-trash"></i> Reset</button>
+                    <!-- Hotkeys button moved to top of card -->
                 </div>
             </div>
             
@@ -204,14 +210,73 @@
             </div>
         </div>
     </div>
+    
+    <!-- Hotkeys Modal -->
+    <div id="hotkeysModal" class="modal">
+        <div class="modal-content">
+            <span id="closeHotkeysModal" class="modal-close">&times;</span>
+            <h2>Keyboard Shortcuts</h2>
+            <p>Use these keyboard shortcuts to speed up your workflow:</p>
+            
+            <table class="hotkeys-table">
+                <thead>
+                    <tr>
+                        <th>Shortcut</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><kbd>Esc</kbd></td>
+                        <td>Deselect elements / Close dialogs</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>H</kbd></td>
+                        <td>Show/hide this shortcuts reference</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Delete</kbd> or <kbd>Backspace</kbd></td>
+                        <td>Delete selected element</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td>
+                        <td>Move selected element (1px)</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Shift</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td>
+                        <td>Move selected element (10px)</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Shift</kbd> + <kbd>]</kbd></td>
+                        <td>Move element forward in layers</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Shift</kbd> + <kbd>[</kbd></td>
+                        <td>Move element backward in layers</td>
+                    </tr>
+                    <!-- <tr>
+                        <td><kbd>F</kbd></td>
+                        <td>Flip card</td>
+                    </tr> -->
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>C</kbd></td>
+                        <td>Copy card to clipboard</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>D</kbd></td>
+                        <td>Download card as PNG</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+    // Card Composer JS - MVC Implementation
+    document.addEventListener('DOMContentLoaded', function() {    
+        // Initialize the application
+        Controller.init();
+    });
+    </script>
 </body>
-
-<script>
-// Card Composer JS - MVC Implementation
-document.addEventListener('DOMContentLoaded', function() {    
-    // Initialize the application
-    Controller.init();
-});
-</script>
-
 </html>

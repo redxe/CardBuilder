@@ -618,3 +618,138 @@ input:checked + .slider:before {
 .grid-overlay.visible {
     opacity: 1;
 }
+
+/* Modal styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #666;
+}
+
+.modal-close:hover {
+    color: #000;
+}
+
+/* Hotkeys table styling */
+.hotkeys-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.hotkeys-table th, .hotkeys-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.hotkeys-table th {
+    background-color: #f8f8f8;
+    font-weight: 500;
+}
+
+.hotkeys-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* Keyboard keys styling */
+kbd {
+    display: inline-block;
+    padding: 3px 6px;
+    font: 11px "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    line-height: normal;
+    color: #444;
+    vertical-align: middle;
+    background-color: #fafafa;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-shadow: inset 0 -1px 0 #bbb;
+    margin: 2px;
+}
+
+/* Add styles for the card top controls container */
+.card-top-controls {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    padding: 0 5px 5px 0;
+    margin-bottom: 5px;
+    position: relative;
+    z-index: 10;
+}
+
+.card-top-controls .btn {
+    background-color: rgba(52, 152, 219, 0.9);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.9em;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.card-top-controls .btn:hover {
+    background-color: rgba(41, 128, 185, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Add styles for the header container */
+.header-container {
+    position: relative;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 0 50px; /* Add padding to prevent title and button overlap */
+}
+
+.header-container h1 {
+    margin-bottom: 0; /* Override the default margin */
+    /* No need for text-align: center as it's inherited from parent */
+}
+
+.header-container .btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(52, 152, 219, 0.9);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.9em;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.header-container .btn:hover {
+    background-color: rgba(41, 128, 185, 1);
+    transform: translateY(calc(-50% - 2px)); /* Maintain vertical centering when moving up 2px */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}

@@ -296,23 +296,125 @@ const Controller = {
                     // Re-render the canvas and update elements list
                     CanvasView.render();
                     UIView.updateElementsList();
+                } else if (document.getElementById('hotkeysModal').style.display === 'flex') {
+                    // If hotkeys modal is open, close it
+                    this.toggleHotkeysModal(false);
+                }
+            }
+            
+            // Only handle shortcuts if no text input is focused
+            if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                // H key to show/hide hotkeys modal
+                if (e.key === 'h' || e.key === 'H') {
+                    this.toggleHotkeysModal();
+                }
+                
+                // Delete/Backspace to remove selected element
+                if ((e.key === 'Delete' || e.key === 'Backspace') && 
+                    CardModel.state.selectedElement !== null) {
+                    CardModel.removeElement(CardModel.state.selectedElement);
+                    CanvasView.render();
+                    UIView.updateElementsList();
+                }
+                
+                // Arrow keys to move selected element
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && 
+                    CardModel.state.selectedElement !== null) {
+                    
+                    // Get the selected element
+                    const element = CardModel.state.elements[CardModel.state.selectedElement];
+                    const moveStep = e.shiftKey ? 10 : 1; // Larger step with Shift key
+                    
+                    // Adjust position based on key
+                    switch(e.key) {
+                        case 'ArrowUp':
+                            element.position.y -= moveStep;
+                            break;
+                        case 'ArrowDown':
+                            element.position.y += moveStep;
+                            break;
+                        case 'ArrowLeft':
+                            element.position.x -= moveStep;
+                            break;
+                        case 'ArrowRight':
+                            element.position.x += moveStep;
+                            break;
+                    }
+                    
+                    // Update coordinate display with new position
+                    CanvasView.updateCoordinateDisplay(element.position.x, element.position.y);
+                    
+                    // Prevent scrolling the page with arrow keys
+                    e.preventDefault();
+                    
+                    // Re-render the canvas
+                    CanvasView.render();
+                }
+                
+                // // F key to flip card
+                // if ((e.key === 'f' || e.key === 'F') && UIView.elements.flipBtn) {
+                //     UIView.elements.flipBtn.click();
+                //     e.preventDefault();
+                // }
+                
+                // C key for copy to clipboard when element selected
+                if ((e.key === 'c' || e.key === 'C') && e.ctrlKey) {
+                    UIView.elements.copyBtn.click();
+                    e.preventDefault();
+                }
+                
+                // D key for download
+                if ((e.key === 'd' || e.key === 'D') && e.ctrlKey) {
+                    UIView.elements.downloadBtn.click();
+                    e.preventDefault();
+                }
+
+                // PageUp/PageDown or Ctrl+Up/Down for layer movement
+                if (CardModel.state.selectedElement !== null) {
+                    const selectedIndex = CardModel.state.selectedElement;
+                    const totalElements = CardModel.state.elements.length;
+                    
+                    // Move layer forward (up in visual stack)
+                    if (((e.key === 'PageUp' || (e.ctrlKey && e.key === 'ArrowUp')) || 
+                         (e.shiftKey && (e.key === ']' || e.key === '}'))) && 
+                        selectedIndex < totalElements - 1) {
+                        CardModel.moveElement(selectedIndex, selectedIndex + 1);
+                        CanvasView.render();
+                        UIView.updateElementsList();
+                        e.preventDefault();
+                    }
+                    
+                    // Move layer backward (down in visual stack)
+                    if (((e.key === 'PageDown' || (e.ctrlKey && e.key === 'ArrowDown')) || 
+                         (e.shiftKey && (e.key === '[' || e.key === '{'))) && 
+                        selectedIndex > 0) {
+                        CardModel.moveElement(selectedIndex, selectedIndex - 1);
+                        CanvasView.render();
+                        UIView.updateElementsList();
+                        e.preventDefault();
+                    }
                 }
             }
         });
 
-        // Text edit panel events
-        if (elements.updateTextBtn) {
-            elements.updateTextBtn.addEventListener('click', () => {
-                this.updateSelectedText();
+        // Add a hotkeys button to show the shortcuts
+        if (UIView.elements.hotkeysBtn) {
+            UIView.elements.hotkeysBtn.addEventListener('click', () => {
+                this.toggleHotkeysModal();
             });
         }
 
-        if (elements.editFontSize) {
-            elements.editFontSize.addEventListener('input', () => {
-                const fontSize = parseInt(elements.editFontSize.value);
-                elements.editFontSizeValue.textContent = `${fontSize}px`;
-            });
-        }
+        // Add click handler for the modal close button
+        document.getElementById('closeHotkeysModal').addEventListener('click', () => {
+            this.toggleHotkeysModal(false);
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('hotkeysModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('hotkeysModal')) {
+                this.toggleHotkeysModal(false);
+            }
+        });
 
         // Grid and frame guide toggles
         if (elements.showGridToggle) {
@@ -1263,5 +1365,17 @@ const Controller = {
         CanvasView.render();
         UIView.updateElementsList();
         UIView.updateBatchControls();
+    },
+    
+    // Toggle hotkeys modal visibility
+    toggleHotkeysModal(show) {
+        const modal = document.getElementById('hotkeysModal');
+        if (show === undefined) {
+            // Toggle if no parameter provided
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        } else {
+            // Otherwise set to the specified state
+            modal.style.display = show ? 'flex' : 'none';
+        }
     },
 };

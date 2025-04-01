@@ -227,6 +227,9 @@ const UIView = {
 
         // Add aspect ratio lock toggle
         lockAspectRatioToggle: document.getElementById('lockAspectRatio'),
+
+        // Add hotkeys button reference
+        hotkeysBtn: document.getElementById('hotkeysBtn'),
     },
     
     // Update the list of elements in the UI
@@ -263,8 +266,8 @@ const UIView = {
                 <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
                 <span class="element-name">${elementName}</span>
                 <div class="element-actions">
-                    <button class="move-up-btn" title="Move Up" style="display:none"><i class="fas fa-arrow-up"></i></button>
-                    <button class="move-down-btn" title="Move Down" style="display:none"><i class="fas fa-arrow-down"></i></button>
+                    <button class="move-up-btn" title="Move Up (Shift+])"><i class="fas fa-arrow-up"></i></button>
+                    <button class="move-down-btn" title="Move Down (Shift+[)"><i class="fas fa-arrow-down"></i></button>
                     <button class="delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
             `;
