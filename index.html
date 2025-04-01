@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Builder</title>
+
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Remove CSV parser as we'll use built-in XML parser -->
+    <script src="js/model.js" defer></script>
+    <script src="js/view.js" defer></script>
+    <script src="js/controller.js" defer></script> 
+    <script src="js/main.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Card Composer</h1>
+        
+        <div class="card-workspace">
+            <div class="canvas-container">
+                <!-- Add card batch navigation controls -->
+                <div class="batch-controls" style="display: none;">
+                    <button id="prevCard" class="btn"><i class="fa-solid fa-arrow-left"></i></button>
+                    <span id="cardCounter">Card 1 of 1</span>
+                    <button id="nextCard" class="btn"><i class="fa-solid fa-arrow-right"></i></button>
+                </div>
+                
+                <div class="card-flip">
+                    <div class="card">
+                        <div class="front">
+                            <canvas id="cardCanvas" width="822" height="1122"></canvas>
+                            <!-- Add frame guides -->
+                            <div id="cutAreaFrame" class="frame-guide cut-area"></div>
+                            <div id="safeAreaFrame" class="frame-guide safe-area"></div>
+                            <!-- Coordinate display -->
+                            <div id="coordinateDisplay" class="coordinate-display">X: 0 Y: 0</div>
+                        </div>
+                        <div class="back">
+                            <h2>Card Back</h2>
+                            <p>This is the back of your card.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="canvas-actions">
+                    <button id="flipCard" class="btn" style="display:none"><i class="fa-solid fa-repeat"></i> Flip Card</button>
+                    <button id="copyToClipboard" class="btn primary"><i class="fa-solid fa-copy"></i> Copy to Clipboard</button>
+                    <button id="downloadCard" class="btn"><i class="fa-solid fa-download"></i> Download</button>
+                    <button id="downloadAllCards" class="btn" style="display: none;"><i class="fa-solid fa-download"></i> Download All</button>
+                    <!-- Add XML export buttons -->
+                    <button id="exportXML" class="btn"><i class="fa-solid fa-code"></i> Export XML</button>
+                    <button id="exportAllXML" class="btn" style="display: none;"><i class="fa-solid fa-code"></i> Export All XML</button>
+                    <button id="resetCard" class="btn danger"><i class="fa-solid fa-trash"></i> Reset</button>
+                </div>
+            </div>
+            
+            <div class="controls-panel">
+                <!-- Add tab navigation -->
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="import">
+                            <i class="fas fa-file-import"></i> Import
+                        </button>
+                        <button class="tab-btn" data-tab="background">
+                            <i class="fas fa-image"></i> Background
+                        </button>
+                        <button class="tab-btn" data-tab="elements">
+                            <i class="fas fa-pencil-alt"></i> Elements
+                        </button>
+                        <button class="tab-btn" data-tab="layers">
+                            <i class="fas fa-layer-group"></i> Layers
+                        </button>
+                    </div>
+                    
+                    <!-- Tab content -->
+                    <div class="tab-content active" id="import-tab">
+                        <div class="panel">
+                            <h3>Import from XML</h3>
+                            <div class="control-group">
+                                <label for="xmlFile">Upload XML File:</label>
+                                <input type="file" id="xmlFile" accept=".xml">
+                                <p class="help-text">XML should define cards with backgrounds and elements (text, images). See sample.xml for format.</p>
+                            </div>
+                            <button id="importXML" class="btn primary">Import Cards</button>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="background-tab">
+                        <div class="panel">
+                            <h3>Background</h3>
+                            <div class="control-group">
+                                <label for="bgImage">Upload Image:</label>
+                                <input type="file" id="bgImage" accept="image/*">
+                            </div>
+                            <div class="control-group">
+                                <label for="bgImageUrl">Or enter image URL:</label>
+                                <div class="url-input-group">
+                                    <input type="text" id="bgImageUrl" placeholder="https://example.com/image.jpg">
+                                    <button id="loadBgUrl" class="btn small">Load</button>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="bgColor">Color:</label>
+                                <input type="color" id="bgColor" value="#ffffff">
+                            </div>
+                            
+                            <!-- Add guides toggles -->
+                            <div class="control-group">
+                                <h4>Canvas Guides</h4>
+                                <div class="toggle-control">
+                                    <label for="showFrames">Show Frame Guides:</label>
+                                    <label class="switch">
+                                        <input type="checkbox" id="showFrames" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-control">
+                                    <label for="showGrid">Show Grid Lines:</label>
+                                    <label class="switch">
+                                        <input type="checkbox" id="showGrid">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="elements-tab">
+                        <div class="panel">
+                            <h3>Add Elements</h3>
+                            <div class="control-group">
+                                <label for="fgImage">Add Image:</label>
+                                <input type="file" id="fgImage" accept="image/*">
+                            </div>
+                            <div class="control-group">
+                                <label for="fgImageUrl">Or enter image URL:</label>
+                                <div class="url-input-group">
+                                    <input type="text" id="fgImageUrl" placeholder="https://example.com/image.jpg">
+                                    <button id="loadFgUrl" class="btn small">Load</button>
+                                </div>
+                            </div>
+
+                            <!-- Add aspect ratio lock toggle -->
+                            <div class="control-group">
+                                <div class="toggle-control">
+                                    <label for="lockAspectRatio">Lock Aspect Ratio:</label>
+                                    <label class="switch">
+                                        <input type="checkbox" id="lockAspectRatio" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <p class="help-text">When enabled, image proportions will be preserved during resizing.</p>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="textContent">Add Text:</label>
+                                <textarea id="textContent" rows="2" placeholder="Enter text"></textarea>
+                                <div class="text-controls">
+                                    <div>
+                                        <label for="textColor">Color:</label>
+                                        <input type="color" id="textColor" value="#000000">
+                                    </div>
+                                    <div>
+                                        <label for="fontSize">Size:</label>
+                                        <input type="range" id="fontSize" min="8" max="72" value="24">
+                                        <span id="fontSizeValue">24px</span>
+                                    </div>
+                                </div>
+                                <button id="addText" class="btn small">Add Text</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="layers-tab">
+                        <div class="panel">
+                            <h3>Layers</h3>
+                            <div id="elementsContainer" class="elements-list">
+                                <p class="empty-message">No elements added yet</p>
+                            </div>
+                            
+                            <!-- Add text edit panel -->
+                            <div id="textEditPanel" class="edit-panel" style="display: none;">
+                                <h4>Edit Text</h4>
+                                <div class="control-group">
+                                    <label for="editTextContent">Text Content:</label>
+                                    <textarea id="editTextContent" rows="2"></textarea>
+                                </div>
+                                <div class="text-controls">
+                                    <div>
+                                        <label for="editTextColor">Color:</label>
+                                        <input type="color" id="editTextColor">
+                                    </div>
+                                    <div>
+                                        <label for="editFontSize">Size:</label>
+                                        <input type="range" id="editFontSize" min="8" max="72" value="24">
+                                        <span id="editFontSizeValue">24px</span>
+                                    </div>
+                                </div>
+                                <button id="updateTextBtn" class="btn primary small">Update Text</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
