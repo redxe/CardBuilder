@@ -485,19 +485,6 @@ textarea {
     z-index: 10;
 }
 
-/* Adjust frames for smaller screens */
-@media (max-width: 800px) {
-    .frame-guide {
-        transform: translate(-50%, -50%) scale(0.8);
-    }
-}
-
-@media (max-width: 600px) {
-    .frame-guide {
-        transform: translate(-50%, -50%) scale(0.6);
-    }
-}
-
 /* URL input group styling */
 .url-input-group {
     display: flex;
