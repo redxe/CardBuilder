@@ -214,7 +214,7 @@ input[type="color"] {
 }
 
 .elements-list {
-    max-height: 200px;
+    max-height: 100%;
     overflow-y: auto;
     border: 1px solid #eee;
     padding: 10px;
