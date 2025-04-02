@@ -857,7 +857,7 @@ const Controller = {
                         // Create a new element with the loaded image
                         CardModel.state.elements.push({
                             type: 'image',
-                            data: { src: img },
+                            data: { src: img, name: element.data.name },
                             position: element.position,
                             size: element.size,
                             rotation: element.rotation
@@ -913,7 +913,10 @@ const Controller = {
                 const imageSrc = element.data.src.src || element.data.src;
                 cardState.elements.push({
                     type: 'image',
-                    data: { imagePath: imageSrc },
+                    data: { 
+                        imagePath: imageSrc,
+                        name: element.data.name || 'Image'
+                    },
                     position: { 
                         x: element.position.x, 
                         y: element.position.y 
@@ -1063,6 +1066,11 @@ const Controller = {
                 imageElement.setAttribute("width", Math.round(element.size.w));
                 imageElement.setAttribute("height", Math.round(element.size.h));
                 
+                // Add the name attribute
+                if (element.data.name) {
+                    imageElement.setAttribute("name", element.data.name);
+                }
+                
                 // Preserve the complete image data URI or URL
                 // Handle both object structure possibilities
                 if (element.data.src.src) {
@@ -1204,6 +1212,11 @@ const Controller = {
                     imageElement.setAttribute("width", Math.round(element.size.w));
                     imageElement.setAttribute("height", Math.round(element.size.h));
                     
+                    // Add the name attribute
+                    if (element.data.name) {
+                        imageElement.setAttribute("name", element.data.name);
+                    }
+                    
                     // Use the imagePath from batch data
                     const imgSrc = element.data.imagePath || 
                                  (element.data.src && element.data.src.src) || 
@@ -1279,7 +1292,10 @@ const Controller = {
         // Add element to card
         const element = {
             type: 'image',
-            data: { src: img },
+            data: { 
+                src: img,
+                name: 'Image ' + (CardModel.state.elements.filter(el => el.type === 'image').length + 1)
+            },
             position: { 
                 x: CanvasView.canvas.width / 2 - width / 2, 
                 y: CanvasView.canvas.height / 2 - height / 2 
@@ -1292,6 +1308,19 @@ const Controller = {
         CanvasView.render();
         UIView.updateElementsList();
         UIView.switchToTab('layers'); // Switch to layers tab
+    },
+
+    // Add a method to rename an image element
+    renameImageElement(index, newName) {
+        if (index >= 0 && index < CardModel.state.elements.length) {
+            const element = CardModel.state.elements[index];
+            if (element.type === 'image') {
+                // Update the name
+                element.data.name = newName.trim() || 'Image';
+                // Re-render the elements list
+                UIView.updateElementsList();
+            }
+        }
     },
     
     // New method to load image from URL

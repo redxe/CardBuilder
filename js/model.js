@@ -127,10 +127,14 @@ const CardModel = {
                     const src = imageElement.getAttribute("src");
                     
                     if (src) {
+                        // Extract the name attribute if available
+                        const name = imageElement.getAttribute("name") || `Image ${j + 1}`;
+                        
                         cardState.elements.push({
                             type: 'image',
                             data: {
-                                imagePath: src
+                                imagePath: src,
+                                name: name
                             },
                             position: {
                                 x: parseInt(imageElement.getAttribute("x")) || (CanvasView.canvas.width / 2),

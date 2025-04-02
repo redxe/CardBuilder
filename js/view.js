@@ -254,21 +254,33 @@ const UIView = {
             
             let elementName = '';
             if (element.type === 'image') {
-                elementName = 'Image';
+                elementName = element.data.name || 'Image';
             } else if (element.type === 'text') {
                 const truncatedText = element.data.text.substring(0, 15) + 
                     (element.data.text.length > 15 ? '...' : '');
                 elementName = `Text: "${truncatedText}"`;
             }
             
-            // Add a drag handle icon
+            // Add a drag handle icon and edit button for images
+            let actionButtons = `
+                <button class="move-up-btn" title="Move Up (Shift+])"><i class="fas fa-arrow-up"></i></button>
+                <button class="move-down-btn" title="Move Down (Shift+[)"><i class="fas fa-arrow-down"></i></button>
+                <button class="delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
+            `;
+            
+            // Add rename button for images
+            if (element.type === 'image') {
+                actionButtons = `
+                    <button class="rename-btn" title="Rename image"><i class="fas fa-edit"></i></button>
+                    ${actionButtons}
+                `;
+            }
+            
             item.innerHTML = `
                 <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
                 <span class="element-name">${elementName}</span>
                 <div class="element-actions">
-                    <button class="move-up-btn" title="Move Up (Shift+])"><i class="fas fa-arrow-up"></i></button>
-                    <button class="move-down-btn" title="Move Down (Shift+[)"><i class="fas fa-arrow-down"></i></button>
-                    <button class="delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                    ${actionButtons}
                 </div>
             `;
             
@@ -282,6 +294,43 @@ const UIView = {
             const moveDownBtn = item.querySelector('.move-down-btn');
             const deleteBtn = item.querySelector('.delete-btn');
             
+            // Add rename button handler for images
+            if (element.type === 'image') {
+                const renameBtn = item.querySelector('.rename-btn');
+                renameBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Create an inline rename input
+                    const nameElement = item.querySelector('.element-name');
+                    const currentName = element.data.name || 'Image';
+                    nameElement.innerHTML = `
+                        <input type="text" class="rename-input" value="${currentName}" />
+                    `;
+                    const input = nameElement.querySelector('.rename-input');
+                    input.focus();
+                    input.select();
+                    
+                    // Save name on blur or Enter key
+                    const saveRename = () => {
+                        const newName = input.value.trim() || 'Image';
+                        Controller.renameImageElement(index, newName);
+                        // Properly update the span text
+                        nameElement.textContent = newName;
+                    };
+                    
+                    input.addEventListener('blur', saveRename);
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            saveRename();
+                            e.preventDefault();
+                        } else if (e.key === 'Escape') {
+                            // Cancel renaming on Escape
+                            nameElement.textContent = currentName;
+                            e.preventDefault();
+                        }
+                    });
+                });
+            }
+            
             // Select element when clicking on it in the list
             item.addEventListener('click', (e) => {
                 // Don't select when clicking buttons or drag handle
@@ -293,7 +342,7 @@ const UIView = {
             });
             
             // Move element up in the stack
-            moveUpBtn.addEventListener('click', (e) => {
+            moveDownBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (index < elements.length - 1) {
                     CardModel.moveElement(index, index + 1);
@@ -303,7 +352,7 @@ const UIView = {
             });
             
             // Move element down in the stack
-            moveDownBtn.addEventListener('click', (e) => {
+            moveUpBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (index > 0) {
                     CardModel.moveElement(index, index - 1);

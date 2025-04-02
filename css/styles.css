@@ -740,3 +740,22 @@ kbd {
     transform: translateY(calc(-50% - 2px)); /* Maintain vertical centering when moving up 2px */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
+
+/* Add styling for rename input */
+.rename-input {
+    width: 80%;
+    padding: 2px 5px;
+    font-size: 14px;
+    border: 1px solid #3498db;
+    border-radius: 3px;
+    background-color: #fff;
+}
+
+/* Element list styling - adjustments for rename button */
+.element-actions button.rename-btn {
+    color: #3498db;
+}
+
+.element-actions button.rename-btn:hover {
+    color: #2980b9;
+}
