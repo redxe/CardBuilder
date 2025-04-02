@@ -124,6 +124,13 @@ const Controller = {
             }
         });
         
+        // Add missing event listener for Update Text button
+        if (elements.updateTextBtn) {
+            elements.updateTextBtn.addEventListener('click', () => {
+                this.updateSelectedText();
+            });
+        }
+        
         // Enter key in text input
         elements.textInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
