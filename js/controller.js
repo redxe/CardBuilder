@@ -192,8 +192,13 @@ const Controller = {
             const file = elements.xmlFileInput.files[0];
             const reader = new FileReader();
             
+            // Show loading bar
+            this.showLoadingBar('Reading XML file...');
+            
             reader.onload = (e) => {
                 try {
+                    this.updateLoadingProgress(30, 'Parsing XML...');
+                    
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
                     
@@ -203,10 +208,17 @@ const Controller = {
                         throw new Error("XML parsing error");
                     }
                     
+                    this.updateLoadingProgress(60, 'Resetting current state...');
+                    
                     // Reset state before processing new XML
                     this.resetBatchState();
                     
+                    this.updateLoadingProgress(80, 'Processing card data...');
+                    
                     const success = CardModel.processXMLData(xmlDoc);
+                    
+                    this.updateLoadingProgress(95, 'Loading first card...');
+                    
                     if (success) {
                         // Set batch mode after XML is processed and cards are loaded
                         CardModel.state.batchMode = true;
@@ -217,16 +229,26 @@ const Controller = {
                         
                         // Show export all XML button when in batch mode
                         elements.exportAllXMLBtn.style.display = 'inline-block';
+                        
+                        this.updateLoadingProgress(100, 'Complete!');
+                        
+                        // Short delay to show 100% completion before hiding
+                        setTimeout(() => {
+                            this.hideLoadingBar();
+                        }, 500);
                     } else {
+                        this.hideLoadingBar();
                         alert('No cards found in the XML file.');
                     }
                 } catch (error) {
                     console.error("XML parsing error:", error);
+                    this.hideLoadingBar();
                     alert('Error parsing XML file. Please check the file format.');
                 }
             };
             
             reader.onerror = () => {
+                this.hideLoadingBar();
                 alert('Error reading the XML file.');
             };
             
@@ -935,6 +957,9 @@ const Controller = {
     },
     
     async downloadAllCards() {
+        // Show loading bar with initial message
+        this.showLoadingBar('Preparing to export all cards...');
+        
         // Save current state for restoration later
         const currentIndex = CardModel.state.currentCardIndex;
         
@@ -944,6 +969,8 @@ const Controller = {
         try {
             // Dynamic loading of JSZip library
             if (!window.JSZip) {
+                this.updateLoadingProgress(5, 'Loading JSZip library...');
+                
                 const script = document.createElement('script');
                 script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
                 document.head.appendChild(script);
@@ -958,22 +985,21 @@ const Controller = {
             const zip = new JSZip();
             const folder = zip.folder("cards");
             
-            // Show progress to user
             const totalCards = CardModel.state.cards.length;
-            alert(`Preparing to export ${totalCards} cards. This may take a moment...`);
+            this.updateLoadingProgress(10, `Preparing ${totalCards} cards...`);
             
             for (let i = 0; i < totalCards; i++) {
                 try {
+                    // Calculate progress percentage (allocate 10-80% of the progress bar for processing cards)
+                    const progress = 10 + Math.round((i / totalCards) * 70);
+                    this.updateLoadingProgress(progress, `Processing card ${i+1} of ${totalCards}`);
+                    
                     // Load each card and render
                     await this.directLoadCardFromBatch(i);
                     
                     // Use toDataURL which creates a new image that's safe to use
-                    // This avoids CORS issues by creating a new image from the canvas
                     const imageData = CanvasView.canvas.toDataURL('image/png').split(',')[1];
                     folder.file(`card_${i+1}.png`, imageData, {base64: true});
-                    
-                    // Update progress (optional - could add a progress bar in the future)
-                    console.log(`Processed card ${i+1} of ${totalCards}`);
                 } catch (cardError) {
                     console.error(`Error processing card ${i+1}:`, cardError);
                     // Continue with other cards instead of failing completely
@@ -981,12 +1007,15 @@ const Controller = {
             }
             
             // Generate and trigger download
+            this.updateLoadingProgress(85, 'Creating ZIP file...');
             try {
                 const content = await zip.generateAsync({
                     type: "blob",
                     compression: "DEFLATE",
                     compressionOptions: { level: 6 }
                 });
+                
+                this.updateLoadingProgress(95, 'Download starting...');
                 
                 const link = document.createElement('a');
                 link.download = 'cards.zip';
@@ -996,15 +1025,24 @@ const Controller = {
                 
                 // FIXED: Completely reload the original card instead of restoring from state
                 // This ensures all images are properly reloaded
+                this.updateLoadingProgress(98, 'Reloading current card...');
                 await this.directLoadCardFromBatch(currentIndex);
                 
-                alert('Cards have been successfully exported to a ZIP file.');
+                this.updateLoadingProgress(100, 'Complete!');
+                
+                // Short delay to show 100% completion before hiding
+                setTimeout(() => {
+                    this.hideLoadingBar();
+                    alert('Cards have been successfully exported to a ZIP file.');
+                }, 500);
+                
             } catch (zipError) {
                 throw new Error('Failed to create ZIP file: ' + zipError.message);
             }
             
         } catch (error) {
             console.error('Error creating zip file:', error);
+            this.hideLoadingBar();
             alert('Failed to download all cards: ' + error.message + '\nPlease try downloading them individually.');
             
             // Restore original card by reloading it completely
@@ -1014,93 +1052,107 @@ const Controller = {
     
     // Generate XML from card data and trigger download
     exportCardAsXML() {
-        // Create XML Document
-        const xmlDoc = document.implementation.createDocument(null, "cards", null);
-        const rootElement = xmlDoc.documentElement;
+        // Show loading bar for export
+        this.showLoadingBar('Generating XML...');
         
-        // Add the current card to the XML
-        const cardElement = xmlDoc.createElement("card");
-        
-        // Add background information
-        const backgroundElement = xmlDoc.createElement("background");
-        backgroundElement.setAttribute("color", CardModel.state.backgroundColor);
-        
-        // Add background image if it exists
-        if (CardModel.state.backgroundImage && CardModel.state.backgroundImage.src) {
-            // Use the complete src data URI or URL
-            backgroundElement.setAttribute("image", CardModel.state.backgroundImage.src);
-        }
-        
-        cardElement.appendChild(backgroundElement);
-        
-        // Add elements container
-        const elementsContainer = xmlDoc.createElement("elements");
-        
-        // Process and add each element
-        CardModel.state.elements.forEach(element => {
-            if (element.type === 'text') {
-                const textElement = xmlDoc.createElement("text");
+        // Use setTimeout to allow UI to update before processing
+        setTimeout(() => {
+            try {
+                // Create XML Document
+                const xmlDoc = document.implementation.createDocument(null, "cards", null);
+                const rootElement = xmlDoc.documentElement;
                 
-                // Set attributes
-                textElement.setAttribute("x", Math.round(element.position.x));
-                textElement.setAttribute("y", Math.round(element.position.y));
-                textElement.setAttribute("color", element.data.color);
-                textElement.setAttribute("fontSize", element.data.fontSize);
-                textElement.setAttribute("fontFamily", element.data.fontFamily);
+                // Add the current card to the XML
+                const cardElement = xmlDoc.createElement("card");
                 
-                if (element.rotation) {
-                    textElement.setAttribute("rotation", element.rotation);
+                // Add background information
+                const backgroundElement = xmlDoc.createElement("background");
+                backgroundElement.setAttribute("color", CardModel.state.backgroundColor);
+                
+                // Add background image if it exists
+                if (CardModel.state.backgroundImage && CardModel.state.backgroundImage.src) {
+                    // Use the complete src data URI or URL
+                    backgroundElement.setAttribute("image", CardModel.state.backgroundImage.src);
                 }
                 
-                // Set text content
-                textElement.textContent = element.data.text;
+                // Add elements container
+                const elementsContainer = xmlDoc.createElement("elements");
                 
-                elementsContainer.appendChild(textElement);
-            } 
-            else if (element.type === 'image' && element.data.src) {
-                const imageElement = xmlDoc.createElement("image");
+                // Process and add each element
+                CardModel.state.elements.forEach(element => {
+                    if (element.type === 'text') {
+                        const textElement = xmlDoc.createElement("text");
+                        
+                        // Set attributes
+                        textElement.setAttribute("x", Math.round(element.position.x));
+                        textElement.setAttribute("y", Math.round(element.position.y));
+                        textElement.setAttribute("color", element.data.color);
+                        textElement.setAttribute("fontSize", element.data.fontSize);
+                        textElement.setAttribute("fontFamily", element.data.fontFamily);
+                        
+                        if (element.rotation) {
+                            textElement.setAttribute("rotation", element.rotation);
+                        }
+                        
+                        // Set text content
+                        textElement.textContent = element.data.text;
+                        
+                        elementsContainer.appendChild(textElement);
+                    } 
+                    else if (element.type === 'image' && element.data.src) {
+                        const imageElement = xmlDoc.createElement("image");
+                        
+                        // Set attributes
+                        imageElement.setAttribute("x", Math.round(element.position.x));
+                        imageElement.setAttribute("y", Math.round(element.position.y));
+                        imageElement.setAttribute("width", Math.round(element.size.w));
+                        imageElement.setAttribute("height", Math.round(element.size.h));
+                        
+                        // Add the name attribute
+                        if (element.data.name) {
+                            imageElement.setAttribute("name", element.data.name);
+                        }
+                        
+                        // Preserve the complete image data URI or URL
+                        // Handle both object structure possibilities
+                        if (element.data.src.src) {
+                            // If src is nested (e.g., element.data.src.src)
+                            imageElement.setAttribute("src", element.data.src.src);
+                        } else {
+                            // Direct src value
+                            imageElement.setAttribute("src", element.data.src);
+                        }
+                        
+                        if (element.rotation) {
+                            imageElement.setAttribute("rotation", element.rotation);
+                        }
+                        
+                        elementsContainer.appendChild(imageElement);
+                    }
+                });
                 
-                // Set attributes
-                imageElement.setAttribute("x", Math.round(element.position.x));
-                imageElement.setAttribute("y", Math.round(element.position.y));
-                imageElement.setAttribute("width", Math.round(element.size.w));
-                imageElement.setAttribute("height", Math.round(element.size.h));
+                cardElement.appendChild(elementsContainer);
+                rootElement.appendChild(cardElement);
                 
-                // Add the name attribute
-                if (element.data.name) {
-                    imageElement.setAttribute("name", element.data.name);
-                }
+                // Serialize XML to string with proper formatting
+                const serializer = new XMLSerializer();
+                let xmlString = serializer.serializeToString(xmlDoc);
                 
-                // Preserve the complete image data URI or URL
-                // Handle both object structure possibilities
-                if (element.data.src.src) {
-                    // If src is nested (e.g., element.data.src.src)
-                    imageElement.setAttribute("src", element.data.src.src);
-                } else {
-                    // Direct src value
-                    imageElement.setAttribute("src", element.data.src);
-                }
+                // Pretty print XML with indentation
+                xmlString = this.formatXML(xmlString);
                 
-                if (element.rotation) {
-                    imageElement.setAttribute("rotation", element.rotation);
-                }
+                // Trigger download
+                this.downloadFile(xmlString, "card.xml", "application/xml");
                 
-                elementsContainer.appendChild(imageElement);
+                // Hide loading when done
+                this.hideLoadingBar();
+                
+            } catch (error) {
+                console.error('Error exporting XML:', error);
+                this.hideLoadingBar();
+                alert('Failed to export XML: ' + error.message);
             }
-        });
-        
-        cardElement.appendChild(elementsContainer);
-        rootElement.appendChild(cardElement);
-        
-        // Serialize XML to string with proper formatting
-        const serializer = new XMLSerializer();
-        let xmlString = serializer.serializeToString(xmlDoc);
-        
-        // Pretty print XML with indentation
-        xmlString = this.formatXML(xmlString);
-        
-        // Trigger download
-        this.downloadFile(xmlString, "card.xml", "application/xml");
+        }, 100); // Small delay to ensure UI updates
     },
     
     // Helper function to format XML with indentation
@@ -1157,98 +1209,128 @@ const Controller = {
         URL.revokeObjectURL(link.href); // Clean up
     },
     
-    // Add method for exporting all cards as XML
+    // Add method for exporting all cards as XML with loading bar
     exportAllCardsAsXML() {
-        // Create XML Document
-        const xmlDoc = document.implementation.createDocument(null, "cards", null);
-        const rootElement = xmlDoc.documentElement;
+        // Show loading bar
+        this.showLoadingBar('Preparing to export all cards as XML...');
         
-        // Process each card in the batch
-        CardModel.state.cards.forEach(cardState => {
-            // Add a card element
-            const cardElement = xmlDoc.createElement("card");
-            
-            // Add background information
-            const backgroundElement = xmlDoc.createElement("background");
-            backgroundElement.setAttribute("color", cardState.backgroundColor);
-            
-            // Add background image if exists
-            if (cardState.bgImagePath) {
-                backgroundElement.setAttribute("image", cardState.bgImagePath);
+        // Use setTimeout to allow UI to update before processing
+        setTimeout(() => {
+            try {
+                // Create XML Document
+                const xmlDoc = document.implementation.createDocument(null, "cards", null);
+                const rootElement = xmlDoc.documentElement;
+                
+                const totalCards = CardModel.state.cards.length;
+                
+                // Process each card in the batch
+                CardModel.state.cards.forEach((cardState, index) => {
+                    // Update progress
+                    const progress = Math.round((index / totalCards) * 80);
+                    this.updateLoadingProgress(progress, `Processing card ${index+1} of ${totalCards}`);
+                    
+                    // Add a card element
+                    const cardElement = xmlDoc.createElement("card");
+                    
+                    // Add background information
+                    const backgroundElement = xmlDoc.createElement("background");
+                    backgroundElement.setAttribute("color", cardState.backgroundColor);
+                    
+                    // Add background image if exists
+                    if (cardState.bgImagePath) {
+                        backgroundElement.setAttribute("image", cardState.bgImagePath);
+                    }
+                    
+                    cardElement.appendChild(backgroundElement);
+                    
+                    // Add elements container
+                    const elementsContainer = xmlDoc.createElement("elements");
+                    
+                    // Process and add each element
+                    cardState.elements.forEach(element => {
+                        if (element.type === 'text') {
+                            const textElement = xmlDoc.createElement("text");
+                            
+                            // Set attributes
+                            textElement.setAttribute("x", Math.round(element.position.x));
+                            textElement.setAttribute("y", Math.round(element.position.y));
+                            textElement.setAttribute("color", element.data.color);
+                            textElement.setAttribute("fontSize", element.data.fontSize);
+                            textElement.setAttribute("fontFamily", element.data.fontFamily);
+                            
+                            if (element.rotation) {
+                                textElement.setAttribute("rotation", element.rotation);
+                            }
+                            
+                            // Set text content
+                            textElement.textContent = element.data.text;
+                            
+                            elementsContainer.appendChild(textElement);
+                        } 
+                        else if (element.type === 'image') {
+                            const imageElement = xmlDoc.createElement("image");
+                            
+                            // Set attributes
+                            imageElement.setAttribute("x", Math.round(element.position.x));
+                            imageElement.setAttribute("y", Math.round(element.position.y));
+                            imageElement.setAttribute("width", Math.round(element.size.w));
+                            imageElement.setAttribute("height", Math.round(element.size.h));
+                            
+                            // Add the name attribute
+                            if (element.data.name) {
+                                imageElement.setAttribute("name", element.data.name);
+                            }
+                            
+                            // Use the imagePath from batch data
+                            const imgSrc = element.data.imagePath || 
+                                        (element.data.src && element.data.src.src) || 
+                                        element.data.src;
+                            
+                            if (imgSrc) {
+                                imageElement.setAttribute("src", imgSrc);
+                            }
+                            
+                            if (element.rotation) {
+                                imageElement.setAttribute("rotation", element.rotation);
+                            }
+                            
+                            elementsContainer.appendChild(imageElement);
+                        }
+                    });
+                    
+                    cardElement.appendChild(elementsContainer);
+                    rootElement.appendChild(cardElement);
+                });
+                
+                this.updateLoadingProgress(85, 'Formatting XML...');
+                
+                // Serialize XML to string with proper formatting
+                const serializer = new XMLSerializer();
+                let xmlString = serializer.serializeToString(xmlDoc);
+                
+                // Pretty print XML with indentation
+                xmlString = this.formatXML(xmlString);
+                
+                this.updateLoadingProgress(95, 'Starting download...');
+                
+                // Trigger download
+                this.downloadFile(xmlString, "all_cards.xml", "application/xml");
+                
+                this.updateLoadingProgress(100, 'Complete!');
+                
+                // Short delay to show 100% completion before hiding
+                setTimeout(() => {
+                    this.hideLoadingBar();
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error exporting all cards as XML:', error);
+                this.hideLoadingBar();
+                alert('Failed to export all cards as XML: ' + error.message);
             }
-            
-            cardElement.appendChild(backgroundElement);
-            
-            // Add elements container
-            const elementsContainer = xmlDoc.createElement("elements");
-            
-            // Process and add each element
-            cardState.elements.forEach(element => {
-                if (element.type === 'text') {
-                    const textElement = xmlDoc.createElement("text");
-                    
-                    // Set attributes
-                    textElement.setAttribute("x", Math.round(element.position.x));
-                    textElement.setAttribute("y", Math.round(element.position.y));
-                    textElement.setAttribute("color", element.data.color);
-                    textElement.setAttribute("fontSize", element.data.fontSize);
-                    textElement.setAttribute("fontFamily", element.data.fontFamily);
-                    
-                    if (element.rotation) {
-                        textElement.setAttribute("rotation", element.rotation);
-                    }
-                    
-                    // Set text content
-                    textElement.textContent = element.data.text;
-                    
-                    elementsContainer.appendChild(textElement);
-                } 
-                else if (element.type === 'image') {
-                    const imageElement = xmlDoc.createElement("image");
-                    
-                    // Set attributes
-                    imageElement.setAttribute("x", Math.round(element.position.x));
-                    imageElement.setAttribute("y", Math.round(element.position.y));
-                    imageElement.setAttribute("width", Math.round(element.size.w));
-                    imageElement.setAttribute("height", Math.round(element.size.h));
-                    
-                    // Add the name attribute
-                    if (element.data.name) {
-                        imageElement.setAttribute("name", element.data.name);
-                    }
-                    
-                    // Use the imagePath from batch data
-                    const imgSrc = element.data.imagePath || 
-                                 (element.data.src && element.data.src.src) || 
-                                 element.data.src;
-                    
-                    if (imgSrc) {
-                        imageElement.setAttribute("src", imgSrc);
-                    }
-                    
-                    if (element.rotation) {
-                        imageElement.setAttribute("rotation", element.rotation);
-                    }
-                    
-                    elementsContainer.appendChild(imageElement);
-                }
-            });
-            
-            cardElement.appendChild(elementsContainer);
-            rootElement.appendChild(cardElement);
-        });
-        
-        // Serialize XML to string with proper formatting
-        const serializer = new XMLSerializer();
-        let xmlString = serializer.serializeToString(xmlDoc);
-        
-        // Pretty print XML with indentation
-        xmlString = this.formatXML(xmlString);
-        
-        // Trigger download
-        this.downloadFile(xmlString, "all_cards.xml", "application/xml");
+        }, 100);
     },
-    
+
     // Update the function to also display element coordinates when clicked in the element list
     setupElementsList() {
         // When an element is selected from the list, update coordinate display
@@ -1413,5 +1495,39 @@ const Controller = {
             // Otherwise set to the specified state
             modal.style.display = show ? 'flex' : 'none';
         }
+    },
+
+    // Add loading bar management methods
+    showLoadingBar(message = 'Processing...') {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const loadingProgressBar = document.getElementById('loadingProgressBar');
+        const loadingStatus = document.getElementById('loadingStatus');
+        
+        // Reset progress bar and status
+        loadingProgressBar.style.width = '0%';
+        loadingStatus.textContent = '';
+        loadingText.textContent = message;
+        
+        // Show the loading overlay
+        loadingOverlay.style.display = 'flex';
+    },
+    
+    updateLoadingProgress(percent, status = '') {
+        const loadingProgressBar = document.getElementById('loadingProgressBar');
+        const loadingStatus = document.getElementById('loadingStatus');
+        
+        // Update progress bar
+        loadingProgressBar.style.width = `${percent}%`;
+        
+        // Update status if provided
+        if (status) {
+            loadingStatus.textContent = status;
+        }
+    },
+    
+    hideLoadingBar() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        loadingOverlay.style.display = 'none';
     },
 };
